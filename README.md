@@ -3,6 +3,7 @@ Simple API for working with AXI DMA on Zynq-7000 without using driver on Linux.
 For correct work of this API you must to disable support of AXI DMA in kernel
 configurations.
 Like this (option `DMA Engine support` must be without asteriks `*`):
+
 ![Image](https://i.ibb.co/ZV7XDtm/ex1.png)
 
 
@@ -46,11 +47,12 @@ int main() {
 }
 ```
 
-Other examples you could find in `example` directory.
+Other examples you could find in `examples` directory.
 
 ### Note
-Work with AXI DMA in SG (scatter gather) mode. API is more slowly than using driver, but you can control all transaction how you need.
-Used C++14.
+Work with AXI DMA in SG (scatter gather) mode.  
+**API is more slowly than using driver, but you can control all transaction how you need.**  
+**Used C++14.**  
 Project work with Zynq-7010. Linux kernel version of 4.14. Vivado version of 2018.02.
 In branch [orig] contains original repository of AXI DMA API from which was started
 this project.
