@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6"/>
+	<Project>
+		<Option title="axidma_api"/>
+		<Option makefile_is_custom="1"/>
+		<Option compiler="gcc"/>
+		<Option virtualFolders="CMake Files\;"/>
+		<Build>
+			<Target title="all">
+				<Option working_dir="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 all"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="rebuild_cache">
+				<Option working_dir="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 rebuild_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="axidma_api">
+				<Option output="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/libaxidma_api.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/../../../../arm-xilinx-linux-gnueabi/include/c++/4.9.2"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/../../../../arm-xilinx-linux-gnueabi/include/c++/4.9.2/arm-xilinx-linux-gnueabi"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/../../../../arm-xilinx-linux-gnueabi/include/c++/4.9.2/backward"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/include"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/include-fixed"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/../../../../arm-xilinx-linux-gnueabi/include"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../arm-xilinx-linux-gnueabi/libc/usr/local/include"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../arm-xilinx-linux-gnueabi/libc/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 axidma_api"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="axidma_api/fast">
+				<Option output="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/libaxidma_api.a" prefix_auto="0" extension_auto="0"/>
+				<Option working_dir="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug"/>
+				<Option object_output="./"/>
+				<Option type="2"/>
+				<Option compiler="gcc"/>
+				<Compiler>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/../../../../arm-xilinx-linux-gnueabi/include/c++/4.9.2"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/../../../../arm-xilinx-linux-gnueabi/include/c++/4.9.2/arm-xilinx-linux-gnueabi"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/../../../../arm-xilinx-linux-gnueabi/include/c++/4.9.2/backward"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/include"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/include-fixed"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../lib/gcc/arm-xilinx-linux-gnueabi/4.9.2/../../../../arm-xilinx-linux-gnueabi/include"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../arm-xilinx-linux-gnueabi/libc/usr/local/include"/>
+					<Add directory="/home/vldmr/Programs/Xilinx/SDK/2017.1/gnu/arm/lin/bin/../arm-xilinx-linux-gnueabi/libc/usr/include"/>
+				</Compiler>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 axidma_api/fast"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+			<Target title="edit_cache">
+				<Option working_dir="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug"/>
+				<Option type="4"/>
+				<MakeCommands>
+					<Build command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 edit_cache"/>
+					<CompileFile command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 &quot;$file&quot;"/>
+					<Clean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+					<DistClean command="/usr/bin/make -j4 -f &quot;/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/cmake-build-debug/Makefile&quot;  VERBOSE=1 clean"/>
+				</MakeCommands>
+			</Target>
+		</Build>
+		<Unit filename="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/AxiDMA.cpp">
+			<Option target="axidma_api"/>
+		</Unit>
+		<Unit filename="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/AxiDMA.h">
+			<Option target="axidma_api"/>
+		</Unit>
+		<Unit filename="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/AxiDmaBuffer.cpp">
+			<Option target="axidma_api"/>
+		</Unit>
+		<Unit filename="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/AxiDmaBuffer.h">
+			<Option target="axidma_api"/>
+		</Unit>
+		<Unit filename="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/AxiDmaDescriptors.cpp">
+			<Option target="axidma_api"/>
+		</Unit>
+		<Unit filename="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/AxiDmaDescriptors.h">
+			<Option target="axidma_api"/>
+		</Unit>
+		<Unit filename="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/library.cpp">
+			<Option target="axidma_api"/>
+		</Unit>
+		<Unit filename="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/library.h">
+			<Option target="axidma_api"/>
+		</Unit>
+		<Unit filename="/media/vldmr/33255619-9256-4e75-a4fe-1a72bd857e1f/projects/CLion/axidma_api/CMakeLists.txt">
+			<Option virtualFolder="CMake Files\"/>
+		</Unit>
+	</Project>
+</CodeBlocks_project_file>
