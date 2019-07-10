@@ -25,12 +25,13 @@ public:
     enum error_codes {
         DMA_OK = 0,              // no error
         ERR_DMA_OPEN_FD,         // can't open /dev/mem
-        ERR_DMA_DEV_BAD_ADDRESS, // wrong AXI DMA base address
+        ERR_DMA_BAD_CHAIN,       // wrong AXI DMA descriptors chain
         ERR_DMA_DEV_MAP,         // can't mmap to /dev/mem
         ERR_DMA_UNINIT,          // can't initialize descriptors
         ERR_DMA_BAD_DELAY,       // set wrong delay (to mm2s/s2mm control register)
         ERR_DMA_BAD_THRESHOLD,   // set wrong threshold (to control register)
-        ERR_DMA_HAD_WORK,        // AXI DMA in halt state
+        ERR_DMA_HALT_WORK,       // AXI DMA in halt state
+        ERR_DMA_ALR_WORK,        // AXI DMA already work
         ERR_DMA_RESET_RX,        // can't reset Rx channel
         ERR_DMA_RESET_TX,        // can't reset Tx channel
         ERR_DMA_TX_IRQ,          // get error Tx interrupt
@@ -46,6 +47,19 @@ public:
     int Send  (const AxiDmaBuffer *buff);
     int Recv  (AxiDmaBuffer *buff, size_t size);
     int Transf(const AxiDmaBuffer *tx, AxiDmaBuffer *rx, size_t rx_len);
+
+    int Send_repeat(const AxiDmaBuffer *buff);
+
+    int  ManualPrepareTransfer(AxiDmaDescriptors *desc_chain, bool way);
+    int  ManualStartTransfer  (AxiDmaDescriptors *desc_chain, bool way);
+    int  ManualPollIrq        (bool way);
+    void ManualResetChannel   (bool way);
+    void *ManualAllocMemory   (size_t buffer_size, uint32_t buffer_base_address);
+
+    uint32_t GetControl (bool way);
+    uint32_t GetStatus  (bool way);
+    uint32_t GetCurrDesc(bool way);
+    uint32_t GetTailDesc(bool way);
 
     virtual ~AxiDMA();
 private:
@@ -80,7 +94,7 @@ private:
 
     /************************* MASK ****************************/
     // Control
-    static constexpr uint32_t DMACR_RS_MASK		   = 0x00000001; //bit 0
+    static constexpr uint32_t DMACR_RUN_MASK	   = 0x00000001; //bit 0
     static constexpr uint32_t DMACR_RESET_MASK	   = 0x00000004; //bit 2
     static constexpr uint32_t DMACR_KEYHOLE_MASK   = 0x00000008; //bit 3
     static constexpr uint32_t DMACR_CYCLICBD_MASK  = 0x00000010; //bit 4
@@ -123,6 +137,8 @@ private:
     int  run();
     int  initialization();
 
+    void setTxDefault();
+    void setRxDefault();
     int  resetChannels();
     void resetTx();
     void resetRx();
@@ -156,6 +172,9 @@ private:
 
     bool isTxWork();
     bool isRxWork();
+
+    bool isTxRun();
+    bool isRxRun();
 
     /***** Interrupt of AXI DMA *****/
     void enableAllTxIrq();

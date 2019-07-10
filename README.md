@@ -1,5 +1,5 @@
 # AXI-DMA-API
-Simple API for working with AXI DMA on Zynq-7000 without using driver on Linux.
+Simple API for working with AXI DMA on Zynq-7000 without using driver on Linux.  
 For correct work of this API you must to disable support of AXI DMA in kernel
 configurations.
 Like this (option `DMA Engine support` must be without asteriks `*`):

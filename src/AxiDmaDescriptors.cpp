@@ -1,6 +1,7 @@
 //
 // Created by vldmr on 25.06.19.
 //
+#include <iostream>
 #include "AxiDmaDescriptors.h"
 
 
@@ -144,11 +145,12 @@ int AxiDmaDescriptors::InitDescriptors(uint32_t buffer_addr, size_t buffer_size)
 
 /**
  * @brief Process descriptor chain. Calculate transmitted data
- * @param none
+ * @param[in] soft - flag of soft free descriptors: true - doesn't clear Control
+ *   fields in descriptors; false - clear Control and Status fields in descriptors
  *
  * @return size - count of transmitted bytes
  */
-size_t AxiDmaDescriptors::ProcessDescriptors() {
+size_t AxiDmaDescriptors::ProcessDescriptors(bool soft) {
     int proc_descrs = countProcessedDescs();
 
     size_t size = 0;
@@ -161,11 +163,38 @@ size_t AxiDmaDescriptors::ProcessDescriptors() {
         else if (isEof(curr_descriptor) && !isSof(curr_descriptor))
             size += getTransferredLen(curr_descriptor);
 
-        freeDescriptor(curr_descriptor);
+        if (!soft)
+            freeDescriptor(curr_descriptor);
+        else
+            curr_descriptor->status = 0;
         curr_descriptor = (descr_t *)getNextAddress(curr_descriptor);
     }
 
     return size;
+}
+
+
+/**
+ * @brief Get status register of first descriptor in the chain
+ * @param none
+ *
+ * @return status register (0x1C)
+ * @note used for debug, may be deprecated
+ */
+uint32_t AxiDmaDescriptors::GetStatus() {
+    auto *curr_descriptor = (descr_t *)getHeadOfDescriptors();
+    return curr_descriptor->status;
+}
+
+
+/**
+ * @brief Check chain used for S2MM
+ * @param none
+ *
+ * @return true - chain used for S2MM; false - used for MM2S
+ */
+bool AxiDmaDescriptors::IsRx() {
+    return isRx;
 }
 
 
@@ -623,13 +652,10 @@ int AxiDmaDescriptors::countProcessedDescs() {
 void AxiDmaDescriptors::DebugDescs() {
     auto *curr_desc = (descr_t *)getHeadOfDescriptors();
     for (auto i = 0; i < bd_count; i++) {
-        printf("%d\tNEXT DESC: 0x%08x\r\n", i, curr_desc->nextdesc);
-        printf("%d\tBUFF ADDR: 0x%08x\r\n", i, curr_desc->buffer_addr);
+        /*printf("%d\tNEXT DESC: 0x%08x\r\n", i, curr_desc->nextdesc);
+        printf("%d\tBUFF ADDR: 0x%08x\r\n", i, curr_desc->buffer_addr);*/
         printf("%d\tCTRL REGR: 0x%08x\r\n", i, curr_desc->control);
         printf("%d\tSTTS REGR: 0x%08x\r\n", i, curr_desc->status);
-        printf("%d\tAPP0 FLD:  0x%08x\r\n", i, curr_desc->app_0);
-        printf("%d\tAPP1 FLD:  0x%08x\r\n", i, curr_desc->app_1);
-        printf("%d\tAPP2 FLD:  0x%08x\r\n", i, curr_desc->app_2);
         printf("\r\n");
         curr_desc = (descr_t *)getNextAddress(curr_desc);
     }

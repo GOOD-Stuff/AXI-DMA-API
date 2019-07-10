@@ -22,8 +22,8 @@ public:
     void         PushBack(uint8_t value);
     uint8_t      PopBack ();
 
-    void         CopyInto(uint8_t *src, size_t len);
-    void         CopyFrom(uint8_t *dst) const;
+    void         CopyFrom(uint8_t *src, size_t len);
+    void         CopyInto(uint8_t *dst) const;
 
     size_t       GetSize  () const;
     const uint8_t *ToArray();

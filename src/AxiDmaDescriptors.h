@@ -22,8 +22,8 @@ class AxiDmaDescriptors {
 public:
     enum error_code {
         RING_OK     = 0,
-        ERR_OPEN_FD = 15,
-        ERR_UNINIT  = 16,
+        ERR_OPEN_FD = 16,
+        ERR_UNINIT  = 17,
         ERR_BAD_BUFFERLEN,
         ERR_SIZE,
         ERR_ALIGN,
@@ -44,7 +44,10 @@ public:
     uint32_t GetBufferBaseAddr    ();
 
     int      InitDescriptors   (uint32_t buffer_addr, size_t buffer_size);
-    size_t   ProcessDescriptors();
+    size_t   ProcessDescriptors(bool soft);
+
+    uint32_t GetStatus();
+    bool     IsRx();
 
     virtual ~AxiDmaDescriptors();
     void DebugDescs(); // for debug

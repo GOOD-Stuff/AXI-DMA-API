@@ -42,13 +42,13 @@ uint8_t AxiDmaBuffer::PopBack() {
 
 
 /**
- * @brief Copy (add back) into AxiDmaBuffer container from @src
+ * @brief Copy (add back) from container @src into AxiDmaBuffer
  * @param[in] src - source array
  * @param[in] len - lenth of src (in bytes)
  *
  * @return none
  */
-void AxiDmaBuffer::CopyInto(uint8_t *src, size_t len) {
+void AxiDmaBuffer::CopyFrom(uint8_t *src, size_t len) {
     if (src == nullptr) throw std::runtime_error("src is nullptr");
     if (len == 0)       throw std::runtime_error("len is 0");
     std::copy(src, src + len, std::back_inserter(_data));
@@ -56,13 +56,13 @@ void AxiDmaBuffer::CopyInto(uint8_t *src, size_t len) {
 
 
 /**
- * @brief Copy from AxiDmaBuffer container into @dst
+ * @brief Copy into container @dst from AxiDmaBuffer
  * @param[out] dst - destination array
  *
  * @return none
  * @note @dst must have enough memory for copy
  */
-void AxiDmaBuffer::CopyFrom(uint8_t *dst) const {
+void AxiDmaBuffer::CopyInto(uint8_t *dst) const {
     if (dst == nullptr) throw std::runtime_error("dst is nullptr");
     std::copy(_data.begin(), _data.end(), dst);
 }
