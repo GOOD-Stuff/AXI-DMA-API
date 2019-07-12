@@ -21,17 +21,17 @@
 class AxiDmaDescriptors {
 public:
     enum error_code {
-        RING_OK     = 0,
-        ERR_OPEN_FD = 16,
-        ERR_UNINIT  = 17,
-        ERR_BAD_BUFFERLEN,
-        ERR_SIZE,
-        ERR_ALIGN,
-        ERR_BPD,
-        ERR_BDCNT,
-        ERR_LASTADDR,
-        ERR_MAP,
-        ERR_BDMAX_LEN
+        RING_OK     = 0,    // 00 - no error
+        ERR_OPEN_FD = 18,   // 18 - can't get access to /dev/mem
+        ERR_UNINIT  = 19,   // 19 -
+        ERR_BAD_BUFFERLEN,  // 20 -
+        ERR_SIZE,           // 21 - size of descriptor is incorrect
+        ERR_ALIGN,          // 22 - size of descriptor doesn't align
+        ERR_BPD,            // 23 -
+        ERR_BDCNT,          // 24 - wrong count of descriptors
+        ERR_LASTADDR,       // 25 -
+        ERR_MAP,            // 26 - can't allocate memory for descriptors chain
+        ERR_BDMAX_LEN       // 27 - the size of data more than allowed
     };
 
     explicit AxiDmaDescriptors(bool chan);
@@ -47,7 +47,7 @@ public:
     size_t   ProcessDescriptors(bool soft);
 
     uint32_t GetStatus();
-    bool     IsRx();
+    bool     IsRx() const;
 
     virtual ~AxiDmaDescriptors();
     void DebugDescs(); // for debug
@@ -95,16 +95,16 @@ private:
     bool 		isRx        { false }; // Channel of reception or transmission?
 
 
-    int  prepareChain(size_t buffer_size);
-    int  calcDescrCount(size_t bytes_per_descr, size_t buffer_size);
-    int  setDescrCount(int descriptors_count);
-    int  setChainSize(size_t chain_size);
+    int  prepareChain      (size_t buffer_size);
+    int  calcDescrCount    (size_t bytes_per_descr, size_t buffer_size);
+    int  setDescrCount     (int descriptors_count);
+    int  setChainSize      (size_t chain_size);
     int  allocDescriptorMem();
-    void clearMemory();
+    void clearMemory       ();
 
-    void    *getHeadOfDescriptors();
-    uint32_t getNextAddress(uint32_t current_address);
-    void    *getNextAddress(void *current_descriptor);
+    void    *getHeadOfDescriptors() const;
+    uint32_t getNextAddress      (uint32_t current_address);
+    void    *getNextAddress      (void *current_descriptor) const;
 
     uint32_t getTailMem(std::uintptr_t headmem_addr, int count_descr);
     uint32_t getControl(descr_t *curr_descriptor);
@@ -128,13 +128,13 @@ private:
 
     /** STATUS_REGISTER **/
     uint32_t getTransferredLen(descr_t *curr_descr);
-    bool isCompleted(descr_t *curr_descr);
-    bool isSof(descr_t *curr_descr);
-    bool isIof(descr_t *curr_descr);
-    bool isEof(descr_t *curr_descr);
+    bool isCompleted          (descr_t *curr_descr);
+    bool isSof                (descr_t *curr_descr);
+    bool isIof                (descr_t *curr_descr);
+    bool isEof                (descr_t *curr_descr);
 
-    void freeDescriptor    (descr_t *curr_descr);
-    int countProcessedDescs();
+    void freeDescriptor     (descr_t *curr_descr);
+    int  countProcessedDescs();
 };
 
 

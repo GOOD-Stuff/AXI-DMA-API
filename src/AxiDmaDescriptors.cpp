@@ -102,12 +102,9 @@ int AxiDmaDescriptors::InitDescriptors(uint32_t buffer_addr, size_t buffer_size)
     if (status != RING_OK)
         return status;
 
-    auto *curr_descriptor = (descr_t *)getHeadOfDescriptors();
-    auto headmem_addr     = reinterpret_cast<std::uintptr_t>(getHeadOfDescriptors());
-
+    auto *curr_descriptor      = (descr_t *)getHeadOfDescriptors();
     uint32_t _buffer_addr 	   = buffer_addr;
     uint32_t next_address_phys = chain_phys_baseaddr;
-    uint32_t tailmem_addr      = getTailMem(headmem_addr, bd_count);
 
     if (!isRx)
         setSof(curr_descriptor);
@@ -119,9 +116,6 @@ int AxiDmaDescriptors::InitDescriptors(uint32_t buffer_addr, size_t buffer_size)
         setBufferAddr   (curr_descriptor, buffer_addr);
         setStatus       (curr_descriptor, 0x00);
         setLength       (curr_descriptor, bytes_per_desc);
-        setHeadMem      (curr_descriptor, headmem_addr);
-        setTailMem      (curr_descriptor, tailmem_addr);
-        setAlignMem     (curr_descriptor, BD_MIN_ALIGNMENT); // ??
 
         _buffer_addr    += bytes_per_desc;
         curr_descriptor = (descr_t *)getNextAddress(curr_descriptor);
@@ -132,10 +126,6 @@ int AxiDmaDescriptors::InitDescriptors(uint32_t buffer_addr, size_t buffer_size)
     setStatus       (curr_descriptor, 0x00);
     setLength       (curr_descriptor, (remainder_size == 0) ? bytes_per_desc
                                                             : remainder_size);
-    setHeadMem      (curr_descriptor, headmem_addr);     // app0
-    setTailMem      (curr_descriptor, tailmem_addr);     // app1
-    setAlignMem     (curr_descriptor, BD_MIN_ALIGNMENT); // app2
-
     if (!isRx)
         setEof(curr_descriptor);
 
@@ -193,7 +183,7 @@ uint32_t AxiDmaDescriptors::GetStatus() {
  *
  * @return true - chain used for S2MM; false - used for MM2S
  */
-bool AxiDmaDescriptors::IsRx() {
+bool AxiDmaDescriptors::IsRx() const {
     return isRx;
 }
 
@@ -242,7 +232,6 @@ int AxiDmaDescriptors::calcDescrCount(size_t bytes_per_descr, size_t buffer_size
         tail_descriptor++;
 
     int count = int((buffer_size / bytes_per_descr) + tail_descriptor);
-    //count = (count == 0) ? 1 : count;
 
     return count;
 }
@@ -268,15 +257,16 @@ int AxiDmaDescriptors::setDescrCount(int descriptors_count) {
  * @brief Set size of descriptors chain
  * @param[in] chain_size - size of chain
  *
- * @return  RING_OK  - size set correct
- * @return -ERR_SIZE - incorrect size
+ * @return  RING_OK   - size set correct
+ * @return -ERR_SIZE  - incorrect size
+ * @return -ERR_ALIGN - size of descriptor doesn't align
  */
 int AxiDmaDescriptors::setChainSize(size_t chain_size) {
     if (chain_size < BD_MIN_ALIGNMENT)
         return -ERR_SIZE;
 
     if (chain_size % BD_MIN_ALIGNMENT != 0)
-        return -ERR_SIZE;
+        return -ERR_ALIGN;
 
     _chain_size = chain_size;
     return RING_OK;
@@ -312,7 +302,7 @@ int AxiDmaDescriptors::allocDescriptorMem() {
  *
  * @return none
  */
-void AxiDmaDescriptors::clearMemory() {
+inline void AxiDmaDescriptors::clearMemory() {
     auto *bdring_base = (uint32_t *)getHeadOfDescriptors();
     memset(bdring_base, 0x00, _chain_size);
 }
@@ -324,7 +314,7 @@ void AxiDmaDescriptors::clearMemory() {
  *
  * @return pointer to descriptor's chain head
  */
-void *AxiDmaDescriptors::getHeadOfDescriptors() {
+void *AxiDmaDescriptors::getHeadOfDescriptors() const {
     return chain_virt_baseaddr;
 }
 
@@ -346,7 +336,7 @@ uint32_t AxiDmaDescriptors::getNextAddress(uint32_t current_address) {
  *
  * @return pointer to the next descriptor in chain
  */
-void *AxiDmaDescriptors::getNextAddress(void *current_descriptor) {
+void *AxiDmaDescriptors::getNextAddress(void *current_descriptor) const {
     auto current_addr = reinterpret_cast<std::uintptr_t >(current_descriptor);
     current_addr     += BD_MIN_ALIGNMENT;
 
@@ -501,8 +491,9 @@ int AxiDmaDescriptors::setLength(descr_t *curr_descriptor, size_t length) {
  * @param[in] data       - data for writing
  *
  * @return none
+ * @note unused (all app_# funcs), could use for debug
  */
-void AxiDmaDescriptors::setApp0(descr_t *curr_descr, uint32_t data) {
+inline void AxiDmaDescriptors::setApp0(descr_t *curr_descr, uint32_t data) {
     curr_descr->app_0 = data;
 }
 
@@ -514,7 +505,7 @@ void AxiDmaDescriptors::setApp0(descr_t *curr_descr, uint32_t data) {
  *
  * @return none
  */
-void AxiDmaDescriptors::setApp1(descr_t *curr_descr, uint32_t data) {
+inline void AxiDmaDescriptors::setApp1(descr_t *curr_descr, uint32_t data) {
     curr_descr->app_1 = data;
 }
 
@@ -526,7 +517,7 @@ void AxiDmaDescriptors::setApp1(descr_t *curr_descr, uint32_t data) {
  *
  * @return none
  */
-void AxiDmaDescriptors::setApp2(descr_t *curr_descr, uint32_t data) {
+inline void AxiDmaDescriptors::setApp2(descr_t *curr_descr, uint32_t data) {
     curr_descr->app_2 = data;
 }
 
@@ -537,7 +528,7 @@ void AxiDmaDescriptors::setApp2(descr_t *curr_descr, uint32_t data) {
  *
  * @return none
  */
-void AxiDmaDescriptors::setSof(descr_t *curr_descr) {
+inline void AxiDmaDescriptors::setSof(descr_t *curr_descr) {
     curr_descr->control |= BD_STATUS_SOF;
 }
 
@@ -548,7 +539,7 @@ void AxiDmaDescriptors::setSof(descr_t *curr_descr) {
  *
  * @return none
  */
-void AxiDmaDescriptors::setEof(descr_t *curr_descr) {
+inline void AxiDmaDescriptors::setEof(descr_t *curr_descr) {
     curr_descr->control |= BD_STATUS_EOF;
 }
 
@@ -583,7 +574,7 @@ bool AxiDmaDescriptors::isCompleted(descr_t *curr_descr) {
  * @return true  - if descriptor is SoF
  * @return false - if descriptor not SoF
  */
-bool AxiDmaDescriptors::isSof(descr_t *curr_descr) {
+inline bool AxiDmaDescriptors::isSof(descr_t *curr_descr) {
     return (curr_descr->status & BD_STATUS_SOF) != 0;
 }
 
@@ -596,7 +587,7 @@ bool AxiDmaDescriptors::isSof(descr_t *curr_descr) {
  * @return false - if descriptor not IoF
  * @note IoF - descriptor which not Start and End but complete
  */
-bool AxiDmaDescriptors::isIof(descr_t *curr_descr) {
+inline bool AxiDmaDescriptors::isIof(descr_t *curr_descr) {
     return (isCompleted(curr_descr) && !isSof(curr_descr) && !isEof(curr_descr));
 }
 
@@ -608,7 +599,7 @@ bool AxiDmaDescriptors::isIof(descr_t *curr_descr) {
  * @return true  - if descriptor is EoF
  * @return false - if descriptor not EoF
  */
-bool AxiDmaDescriptors::isEof(descr_t *curr_descr) {
+inline bool AxiDmaDescriptors::isEof(descr_t *curr_descr) {
     return (curr_descr->status & BD_STATUS_EOF) != 0;
 }
 
@@ -619,7 +610,7 @@ bool AxiDmaDescriptors::isEof(descr_t *curr_descr) {
  *
  * @return none
  */
-void AxiDmaDescriptors::freeDescriptor(descr_t *curr_descr) {
+inline void AxiDmaDescriptors::freeDescriptor(descr_t *curr_descr) {
     curr_descr->control = 0;
     curr_descr->status  = 0;
 }

@@ -136,7 +136,7 @@ int AxiDMA::Send_repeat(const AxiDmaBuffer *buff) {
         return status;
     }
 
-    auto *tx_data    = (uint8_t *)allocBufferMem(buff_size,
+    auto *tx_data = (uint8_t *)allocBufferMem(buff_size,
                                                  txring->GetBufferBaseAddr());
     if (tx_data == nullptr) {
         delete txring;
@@ -403,7 +403,7 @@ int AxiDMA::Transf(const AxiDmaBuffer *tx, AxiDmaBuffer *rx, size_t rx_len) {
 int AxiDMA::ManualPrepareTransfer(AxiDmaDescriptors *desc_chain, bool way) {
     try {
         if (way) {
-            if (!desc_chain->IsRx())
+            if (desc_chain->IsRx() == false)
                 return -ERR_DMA_BAD_CHAIN;
 
             if (isRxRun())
@@ -519,6 +519,142 @@ void *AxiDMA::ManualAllocMemory(size_t buffer_size, uint32_t buffer_base_address
 
 
 /**
+ * Direct Register Mode (Scatter Gather Engine is disabled) provides a configuration for doing
+simple DMA transfers on MM2S and S2MM channels that requires less FPGA resource
+utilization. Transfers are initiated by accessing the DMACR, the Source or Destination
+Address and the Length registers. When the transfer is completed, a DMASR.IOC_Irq asserts
+for the associated channel and if enabled generates an interrupt out.
+A DMA operation for the MM2S channel is set up and started by the following sequence:
+1. Start the MM2S channel running by setting the run/stop bit to 1 (MM2S_DMACR.RS =
+    1). The halted bit (DMASR.Halted) should deassert indicating the MM2S channel is
+running.
+ 2. If desired, enable interrupts by writing a 1 to MM2S_DMACR.IOC_IrqEn and
+MM2S_DMACR.Err_IrqEn. The delay interrupt, delay count, and threshold count are not
+used when the AXI DMA is configured for Direct Register Mode.
+3. Write a valid source address to the MM2S_SA register. If AXI DMA is configured for an
+address space greater than 32, then program the MM2S_SA MSB register.
+
+ If the AXI DMA is not configured for Data Re-Alignment, then a valid address must be aligned or
+undefined results occur. What is considered aligned or unaligned is based on the stream
+data width.
+
+ When AXI_DMA is configured in Micro Mode, it is your responsibility to
+specify the correct address. Micro DMA does not take care of the 4K boundary.
+
+For example, if Memory Map Data Width = 32, data is aligned if it is located at word
+offsets (32-bit offset), that is 0x0, 0x4, 0x8, 0xC, and so forth.
+
+If DRE is enabled and Streaming Data Width < 128, then the Source Addresses can
+ be of any byte offset.
+4. Write the number of bytes to transfer in the MM2S_LENGTH register. A value of zero
+written has no effect. A non-zero value causes the MM2S_LENGTH number of bytes to
+be read on the MM2S AXI4 interface and transmitted out of the MM2S AXI4-Stream
+interface. The MM2S_LENGTH register must be written last. All other MM2S registers
+can be written in any order. In the case of Micro DMA, this value cannot exceed
+[Burst_length * (Memory Mapped Data Width)/8].
+ */
+int AxiDMA::DirectSend(const AxiDmaBuffer *buff) {
+    try {
+        std::lock_guard<std::mutex> lock(mute);
+        size_t buff_size = buff->GetSize() * sizeof(uint8_t);
+        auto *tx_data    = (uint8_t *)allocBufferMem(buff_size, TX_BUFFER_BASE);
+        if (tx_data == nullptr)
+            return -ERR_DMA_BAD_ALLOC;
+
+        startTx();
+        if (checkTxHalt()) {
+            munmap(tx_data, buff_size);
+            return -ERR_DMA_HALT_WORK;
+        }
+
+        buff->CopyInto(tx_data);
+        setSourceAddress(TX_BUFFER_BASE); // XXX: need to add check SA alignment
+
+        // XXX: need to add check size
+        setTxLength(buff_size); // start transfer
+
+        int status = waitTxDirectComplete();
+        if (status != DMA_OK) {
+            munmap(tx_data, buff_size);
+            return status;
+        }
+        status = waitTxComplete();
+        if (status != DMA_OK) {
+            munmap(tx_data, buff_size);
+            return status;
+        }
+
+        munmap(tx_data, buff_size);
+        return buff_size;
+    } catch (...) {
+        throw;
+    }
+}
+
+
+/**
+ *
+1. Start the S2MM channel running by setting the run/stop bit to 1 (S2MM_DMACR.RS =
+    1). The halted bit (DMASR.Halted) should deassert indicating the S2MM channel is
+running.
+2. If desired, enable interrupts by writing a 1 to S2MM_DMACR.IOC_IrqEn and
+S2MM_DMACR.Err_IrqEn. The delay interrupt, delay count, and threshold count are not
+used when the AXI DMA is configured for Direct Register Mode.
+3. Write a valid destination address to the S2MM_DA register. If AXI DMA is configured for
+an address space greater than 32, program the S2MM_DA MSB register.
+4. If the AXI DMA is not configured for Data Re-Alignment then a valid address must be
+aligned or undefined results occur. What is considered aligned or unaligned is based on
+the stream data width.
+For example, if Memory Map Data Width= 32, data is aligned if it is located at word
+offsets (32-bit offset), that is, 0x0, 0x4, 0x8, 0xC, and so forth. If DRE is enabled and
+Streaming Data Width < 128 then the Destination Addresses can be of any byte offset.
+ 5. Write the length in bytes of the receive buffer in the S2MM_LENGTH register. A value of
+zero has no effect. A non-zero value causes a write on the S2MM AXI4 interface of the
+number of bytes received on the S2MM AXI4-Stream interface. A value greater than or
+equal to the largest received packet must be written to S2MM_LENGTH. A receive buffer
+length value that is less than the number of bytes received produces undefined results.
+When AXI DMA is configured in Micro mode, this value should exactly match the bytes
+received on the S2MM AXI4-Stream interface. The S2MM_LENGTH register must be
+written last. All other S2MM registers can be written in any order.
+ */
+int AxiDMA::DirectRecv(AxiDmaBuffer *buff, size_t size) {
+    try {
+        std::lock_guard<std::mutex> lock(mute);
+        auto *rx_data = (uint8_t *)allocBufferMem(size, RX_BUFFER_BASE);
+        if (rx_data == nullptr)
+            return -ERR_DMA_BAD_ALLOC;
+
+        startRx();
+        if (checkRxHalt()) {
+            munmap(rx_data, size);
+            return -ERR_DMA_HALT_WORK;
+        }
+        setDestinationAddress(RX_BUFFER_BASE);
+        setRxLength(size);
+
+        /*int status = waitRxDirectComplete();
+        if (status != DMA_OK) {
+            munmap(rx_data, size);
+            return status;
+        }*/
+        int status = waitRxComplete();
+        if (status != DMA_OK) {
+            munmap(rx_data, size);
+            return status;
+        }
+        uint32_t transferred_len = getRxLength();
+
+        buff->CopyFrom(rx_data, transferred_len);
+        munmap(rx_data, size);
+
+        return transferred_len;
+    } catch (...) {
+        throw;
+    }
+}
+
+
+/**
  * @brief Get control register of chosen channel
  * @param[in] way - the flag of channel: true - S2MM; false - MM2S
  *
@@ -526,10 +662,8 @@ void *AxiDMA::ManualAllocMemory(size_t buffer_size, uint32_t buffer_base_address
  * @note used for debug, may be deprecated
  */
 uint32_t AxiDMA::GetControl(bool way) {
-    if (way)
-        return getRxControl();
-    else
-        return getTxControl();
+    if (way) return getRxControl();
+    else     return getTxControl();
 }
 
 
@@ -541,10 +675,8 @@ uint32_t AxiDMA::GetControl(bool way) {
  * @note used for debug, may be deprecated
  */
 uint32_t AxiDMA::GetStatus(bool way) {
-    if (way)
-        return getRxStatus();
-    else
-        return getTxStatus();
+    if (way) return getRxStatus();
+    else     return getTxStatus();
 }
 
 
@@ -556,10 +688,8 @@ uint32_t AxiDMA::GetStatus(bool way) {
  * @note used for debug, may be deprecated
  */
 uint32_t AxiDMA::GetCurrDesc(bool way) {
-    if (way)
-        return dma_hw->s2mm_curdesc;
-    else
-        return dma_hw->mm2s_curdesc;
+    if (way) return dma_hw->s2mm_curdesc;
+    else     return dma_hw->mm2s_curdesc;
 }
 
 
@@ -571,16 +701,13 @@ uint32_t AxiDMA::GetCurrDesc(bool way) {
  * @note used for debug, may be deprecated
  */
 uint32_t AxiDMA::GetTailDesc(bool way) {
-    if (way)
-        return dma_hw->s2mm_taildesc;
-    else
-        return dma_hw->mm2s_taildesc;
+    if (way) return dma_hw->s2mm_taildesc;
+    else     return dma_hw->mm2s_taildesc;
 }
 
 
-
 /**
- * @brief Launch AXI DMA channels
+ * @brief Launch AXI DMA channels, enable all interrupts
  * @param none
  *
  * @return  DMA_OK           - initialization was successful
@@ -663,6 +790,12 @@ int AxiDMA::initialization() {
 }
 
 
+/**
+ * @brief Reset MM2S channel, enable all interrupts, set delay and threshold value
+ * @param none
+ *
+ * @return none
+ */
 inline void AxiDMA::setTxDefault() {
     int delay = RESET_TIMEOUT;
 
@@ -679,6 +812,12 @@ inline void AxiDMA::setTxDefault() {
 }
 
 
+/**
+ * @brief Reset S2MM channel, enable all interrupts, set delay and threshold value
+ * @param none
+ *
+ * @return none
+ */
 inline void AxiDMA::setRxDefault() {
     int delay = RESET_TIMEOUT;
 
@@ -693,6 +832,7 @@ inline void AxiDMA::setRxDefault() {
     setRxDelay(0);
     setRxThreshold(1);
 }
+
 
 /**
  * @brief Soft reset signal for both channels
@@ -907,6 +1047,72 @@ inline void AxiDMA::setRxTailDesc(uint32_t tail_desc) {
 
 
 /**
+ * @brief Write into MM2S SA register
+ * @param[in] src_addr - value for writing
+ *
+ * @return none
+ */
+inline void AxiDMA::setSourceAddress(uint32_t src_addr) {
+    dma_hw->mm2s_src_addr = src_addr;
+}
+
+
+/**
+ * @brief Write into S2MM DA register
+ * @param[in] dst_addr - value for writing
+ *
+ * @return none
+ */
+inline void AxiDMA::setDestinationAddress(uint32_t dst_addr) {
+    dma_hw->s2mm_dst_addr = dst_addr;
+}
+
+
+/**
+ * @brief Write into MM2S LENGTH register
+ * @param[in] length - value for writing
+ *
+ * @return none
+ */
+inline void AxiDMA::setTxLength(uint32_t length) {
+    dma_hw->mm2s_length = length;
+}
+
+
+/**
+ * @brief Write into S2MM LENGTH register
+ * @param[in] length - value for writing
+ *
+ * @return none
+ */
+inline void AxiDMA::setRxLength(uint32_t length) {
+    dma_hw->s2mm_length = length;
+}
+
+
+/**
+ * @brief Get length of transferred data
+ * @param none
+ *
+ * @return length of sending bytes on MM2S
+ */
+inline uint32_t AxiDMA::getTxLength() {
+    return dma_hw->mm2s_length;
+}
+
+
+/**
+ * @brief Get length of transferred data
+ * @param none
+ *
+ * @return length of actual bytes received on S2MM
+ */
+inline uint32_t AxiDMA::getRxLength() {
+    return dma_hw->s2mm_length;
+}
+
+
+/**
  * @brief Run MM2S channel
  * @param none
  *
@@ -925,8 +1131,8 @@ void AxiDMA::startTx() {
  * @return none
  */
 void AxiDMA::startRx() {
-    //if (!isRxWork())
-    setRxControl(getRxControl() | DMACR_RUN_MASK);
+    if (!isRxWork())
+        setRxControl(getRxControl() | DMACR_RUN_MASK);
 }
 
 
@@ -1144,8 +1350,9 @@ inline uint32_t AxiDMA::getRxIRQ() {
  * @brief Clear interrupt bits of MMM2S channel
  * @param irq - interrupt for clearing
  *
- * @return DMA_OK - doesn't get error interrupt (Err_Irq)
- * @return irq    - value of error interrupt
+ * @return  DMA_OK             - doesn't get error interrupt (Err_Irq)
+ * @return  irq                - value of error interrupt
+ * @return -ERR_DMA_TX_TIMEOUT - IRQ is absent, may be was timeout?
  */
 uint32_t AxiDMA::ackTxIRQ(uint32_t irq) {
     if (irq == 0)
@@ -1163,15 +1370,15 @@ uint32_t AxiDMA::ackTxIRQ(uint32_t irq) {
  * @brief Clear interrupt bits of MMM2S channel
  * @param irq - interrupt for clearing
  *
- * @return DMA_OK - doesn't get error interrupt (Err_Irq)
- * @return irq    - value of error interrupt
+ * @return DMA_OK              - doesn't get error interrupt (Err_Irq)
+ * @return irq                 - value of error interrupt
+ * @return -ERR_DMA_RX_TIMEOUT - IRQ is absent, may be was timeout?
  */
 uint32_t AxiDMA::ackRxIRQ(uint32_t irq) {
     if (irq == 0)
         return -ERR_DMA_RX_TIMEOUT;
 
-    uint32_t ack_irq = getRxStatus() | irq;
-    setRxStatus(ack_irq);
+    setRxStatus(irq);
     if (irq & DMASR_ERRIRQ_MASK)
         return irq;
 
@@ -1263,13 +1470,6 @@ inline int AxiDMA::waitTxComplete() {
         return -ERR_DMA_TX_IRQ;
     } else if (timeout_10s <= 0 && (tx_irq != DMASR_IOCIRQ_MASK))
         return -ERR_DMA_TX_TIMEOUT;
-    /*if (timeout_10s == 0)
-        return -ERR_DMA_TX_TIMEOUT;
-    else if (status != DMA_OK) {
-        printf("tx_irq_err: %x | %d s\r\n", status, timeout_10s); // debug
-        return -ERR_DMA_TX_IRQ;
-    }*/
-
 
     return DMA_OK;
 }
@@ -1304,13 +1504,55 @@ inline int AxiDMA::waitRxComplete() {
     } else if (timeout_10s <= 0 && (rx_irq != DMASR_IOCIRQ_MASK))
         return -ERR_DMA_RX_TIMEOUT;
 
+    return DMA_OK;
+}
 
-//    if (timeout_10s == 0)
-//        return -ERR_DMA_RX_TIMEOUT;
-//    else if (status != DMA_OK) {
-//        printf("rx_irq_err: %x | %d s\r\n", status, timeout_10s); // debug
-//        return -ERR_DMA_RX_IRQ;
-//    }
+
+/**
+ * @brief Wait until complete transferring in direct mode
+ * @param none
+ *
+ * @return  DMA_OK             -
+ * @return -ERR_DMA_TX_IDLEOUT -
+ */
+inline int AxiDMA::waitTxDirectComplete() {
+    size_t timeout_10s = 10000000; // 10 second (-1)
+    volatile uint32_t tx_irq = getTxStatus() & DMASR_IDLE_MASK;
+    while (!tx_irq && (timeout_10s > 0)) { // search interrupt register
+        tx_irq = getTxStatus() & DMASR_IDLE_MASK;
+        /*if (tx_irq == 0)
+            std::this_thread::sleep_for(std::chrono::microseconds(10));*/
+        timeout_10s -= 1;
+    }
+
+    if (timeout_10s <= 0 && ((tx_irq & DMASR_IDLE_MASK) == 0)) {
+        return -ERR_DMA_TX_IDLEOUT;
+    }
+
+    return DMA_OK;
+}
+
+
+/**
+ * @brief Wait until complete transferring in direct mode
+ * @param none
+ *
+ * @return  DMA_OK             -
+ * @return -ERR_DMA_RX_IDLEOUT -
+ */
+inline int AxiDMA::waitRxDirectComplete() {
+    size_t timeout_10s = 10000000; // 10 second (-1)
+    volatile uint32_t rx_irq = getRxStatus() & DMASR_IDLE_MASK;
+    while (!rx_irq && (timeout_10s > 0)) { // search interrupt register
+        rx_irq = getRxStatus() & DMASR_IDLE_MASK;
+        /*if (rx_irq == 0)
+            std::this_thread::sleep_for(std::chrono::microseconds(10));*/
+        timeout_10s -= 1;
+    }
+
+    if (timeout_10s <= 0 && ((rx_irq & DMASR_IDLE_MASK) == 0)) {
+        return -ERR_DMA_RX_IDLEOUT;
+    }
 
     return DMA_OK;
 }
