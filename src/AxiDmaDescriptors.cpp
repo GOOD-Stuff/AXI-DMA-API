@@ -1,7 +1,6 @@
 //
 // Created by vldmr on 25.06.19.
 //
-#include <iostream>
 #include "AxiDmaDescriptors.h"
 
 

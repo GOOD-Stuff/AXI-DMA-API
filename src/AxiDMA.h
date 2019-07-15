@@ -41,6 +41,8 @@ public:
         ERR_DMA_BAD_ALLOC,       // 15 - can't allocate memory
         ERR_DMA_TX_IDLEOUT,      // 16 - timeout by waiting IDLE state
         ERR_DMA_RX_IDLEOUT,      // 17 - timeout by waiting IDLE state
+        ERR_DMA_IS_SG,           // 18 - trying to using Direct Mode's methods in SG mode
+        ERR_DMA_IS_DIRECT,       // 19 - trying to using SG methods in Direct Mode
     };
 
     explicit AxiDMA();
@@ -57,16 +59,22 @@ public:
     int  ManualPollIrq        (bool way);
     void ManualResetChannel   (bool way);
     void *ManualAllocMemory   (size_t buffer_size, uint32_t buffer_base_address);
+
+    bool IsSg();
     /******************************************/
 
     /************** Direct mode ***************/
     int DirectSend(const AxiDmaBuffer *buff);
     int DirectRecv(AxiDmaBuffer *buff, size_t size);
+    int DirectManualRecv(uint32_t dst_addr, size_t size);
     /******************************************/
+
+    /************** Debug funcs ***************/
     uint32_t GetControl (bool way);
     uint32_t GetStatus  (bool way);
     uint32_t GetCurrDesc(bool way);
     uint32_t GetTailDesc(bool way);
+    /******************************************/
 
     virtual ~AxiDMA();
 private:
@@ -104,7 +112,7 @@ private:
     static constexpr int      RESET_TIMEOUT         = 300000;
     static constexpr uint32_t UNKNOWN_SIZE          = 0xFFFF;
 
-    // need to rewrite
+    // XXX: need to rewrite
     static constexpr uint32_t RX_BASEADDR	 = 0x01000000;
     static constexpr uint32_t RX_BUFFER_BASE = 0x02000000;
     static constexpr uint32_t TX_BASEADDR	 = 0x03000000;
@@ -142,15 +150,17 @@ private:
     static constexpr uint32_t DMASR_DELAY_MASK		= 0xFF000000;
     /**************************************************************/
     uint32_t _base_addr { AXIDMA_BASEADDR };
-    std::mutex mute; // for thread safe (?)
+    std::mutex tx_mute; // for thread safe (?)
+    std::mutex rx_mute;
     /**
      * Software part of AXI DMA
      * Uninitialized dma means no connection between software and hardware parts
      */
     int              fd   { 0 };
-    int 		     isRx { 0 }; // Is exist RX channel
-    int 		     isTx { 0 }; // Is exist TX channel
-    dma_device_t     *dma_hw;    // Pointer to hardware AXI DMA
+    int 		     isRx { 0 };     // Is exist RX channel
+    int 		     isTx { 0 };     // Is exist TX channel
+    bool             isSg { false }; // Is Scatter/Gather mode
+    dma_device_t     *dma_hw;        // Pointer to hardware AXI DMA
 
     int  run();
     int  initialization();
@@ -224,12 +234,17 @@ private:
     int  waitRxDirectComplete();
 
     /****** Check existence of Tx/Rx channels *******/
-    static bool hasTx(dma_device_t *dma_hw) {
+    static bool hasTx(dma_device_t *dma_hw) { // check MM2S channel
         return dma_hw->mm2s_dmacr != 0;
     }
 
-    static bool hasRx(dma_device_t *dma_hw) {
+    static bool hasRx(dma_device_t *dma_hw) { // check S2MM channel
         return dma_hw->s2mm_dmacr != 0;
+    }
+
+    static bool hasSg(dma_device_t *dma_hw) { // check Scatter/Gather mode
+        return (dma_hw->s2mm_dmasr & DMASR_ISSG_MASK)
+            || (dma_hw->mm2s_dmasr & DMASR_ISSG_MASK);
     }
 };
 

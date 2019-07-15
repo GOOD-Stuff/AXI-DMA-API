@@ -22,16 +22,16 @@ class AxiDmaDescriptors {
 public:
     enum error_code {
         RING_OK     = 0,    // 00 - no error
-        ERR_OPEN_FD = 18,   // 18 - can't get access to /dev/mem
-        ERR_UNINIT  = 19,   // 19 -
-        ERR_BAD_BUFFERLEN,  // 20 -
-        ERR_SIZE,           // 21 - size of descriptor is incorrect
-        ERR_ALIGN,          // 22 - size of descriptor doesn't align
-        ERR_BPD,            // 23 -
-        ERR_BDCNT,          // 24 - wrong count of descriptors
-        ERR_LASTADDR,       // 25 -
-        ERR_MAP,            // 26 - can't allocate memory for descriptors chain
-        ERR_BDMAX_LEN       // 27 - the size of data more than allowed
+        ERR_OPEN_FD = 20,   // 20 - can't get access to /dev/mem
+        ERR_UNINIT  = 21,   // 21 -
+        ERR_BAD_BUFFERLEN,  // 22 -
+        ERR_SIZE,           // 23 - size of descriptor is incorrect
+        ERR_ALIGN,          // 24 - size of descriptor doesn't align
+        ERR_BPD,            // 25 -
+        ERR_BDCNT,          // 26 - wrong count of descriptors
+        ERR_LASTADDR,       // 27 -
+        ERR_MAP,            // 28 - can't allocate memory for descriptors chain
+        ERR_BDMAX_LEN       // 29 - the size of data more than allowed
     };
 
     explicit AxiDmaDescriptors(bool chan);
