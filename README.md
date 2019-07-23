@@ -49,8 +49,19 @@ int main() {
 
 Other examples you could find in `examples` directory.
 
+
+### Motivation
+This API was written because Xilinx doesn't provide user friendly DMA character driver
+for Linux OS. All their examples (axidmatest.c, etc) is difficult understand (for
+non kernel/driver programmers) and in most cases is useless, IMHO.  
+In current time on github is exist good character driver written by [bperez77](https://github.com/bperez77/xilinx_axidma).
+But it is very general and unfortunately has some problems in work with multithreading
+and you can't get information about (how much) transmission bytes (but it is not trouble of driver, so set by DMA engine in Linux OS).  
+Using this API you can create your own system which process AXI DMA transactions.
+
+
 ### Note
-Work with AXI DMA in SG (scatter gather) mode.  
+Work with AXI DMA in SG (scatter gather) and Direct Register mode.  
 **API is more slowly than using driver, but you can control all transaction how you need.**  
 **Used C++14.**  
 Project work with Zynq-7010. Linux kernel version of 4.14. Vivado version of 2018.02.

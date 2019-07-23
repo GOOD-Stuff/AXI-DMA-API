@@ -1543,7 +1543,7 @@ inline int AxiDMA::waitRxComplete() {
     if (status == DMA_OK)
         return DMA_OK;
     else if (status != -ERR_DMA_RX_TIMEOUT) {
-        printf("rx_irq_err: %x | %d s\r\n", status, timeout_10s); // debug
+        printf("rx_irq_err: %x\r\n", status); // debug
         return -ERR_DMA_RX_IRQ;
     } else
         return -ERR_DMA_RX_TIMEOUT;
