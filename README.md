@@ -8,7 +8,7 @@ Like this (option `DMA Engine support` must be without asteriks `*`):
 
 
 ## Example
-One of examples of transferring data between Zynq-7010 and Kintex-7.
+One of examples of transferring data between Zynq-7010 and Kintex-7.  
 Send command to Kintex and receive result (status) to Zynq:
 ```
 #include <AxiDMA.h>
@@ -50,6 +50,18 @@ int main() {
 Other examples you could find in `examples` directory.
 
 
+## Install
+To build this library, you must have cmake version of >= 3.13.  
+In the file `toolchainfile.cmake` in the variable `CROSS_PATH`, you must specify
+the path to your cross-compiler (which located in the `../Xilinx/SDK/../gnu/<your arch>/lin/bin`).  
+And then in the console execute:
+```
+$ cd <path_to_this_repository>
+$ cmake -DCMAKE_TOOLCHAIN_FILE=toolchainfile.cmake .
+$ make
+```
+At the exit, you will get the compiled static library `libaxidma_api.a`.
+
 ### Motivation
 This API was written because Xilinx doesn't provide user friendly DMA character driver
 for Linux OS. All their examples (axidmatest.c, etc) is difficult understand (for
@@ -64,6 +76,12 @@ Using this API you can create your own system which process AXI DMA transactions
 Work with AXI DMA in SG (scatter gather) and Direct Register mode.  
 **API is more slowly than using driver, but you can control all transaction how you need.**  
 **Used C++14.**  
-Project work with Zynq-7010. Linux kernel version of 4.14. Vivado version of 2018.02.
+Project work with Zynq-7010.  
+Linux kernel version of 4.14.  
+Vivado version of 2018.02.  
+SDK version of 2017.01.  
 In the branch [original](https://github.com/GOOD-Stuff/AXI-DMA-API/tree/original) contains original repository of AXI DMA API from which was started
 this project.
+
+### Issues
+In the current version of API not correct implemented wait* methods. Thus polling the status register for interrupts it may early get timeout.
