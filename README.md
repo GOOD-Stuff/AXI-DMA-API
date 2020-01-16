@@ -40,7 +40,7 @@ int main() {
   for (int i = 0; i < non_dynamic_rx_buffer.GetSize(); i++)
     printf("%d) 0x%02x\r\n", i, rx_buff[i]);
 
-  delete rx_buff;
+  delete[] rx_buff;
   delete dma_dev;
   delete dynamic_tx_buffer;
   return 0;
