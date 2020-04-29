@@ -17,22 +17,26 @@
  */
 class AxiDmaBuffer {
 public:
-    explicit AxiDmaBuffer() noexcept;
+    AxiDmaBuffer() = default;
+    explicit AxiDmaBuffer(const std::vector<uint8_t>&) noexcept;
+    AxiDmaBuffer(const uint8_t*, size_t);
 
+    void         Append(const std::vector<uint8_t>& vec);
+    void         Append(std::vector<uint8_t>&& vec);
     void         PushBack(uint8_t value);
-    uint8_t      PopBack ();
+    uint8_t      PopBack () noexcept;
 
     void         CopyFrom(uint8_t *src, size_t len);
     void         CopyInto(uint8_t *dst) const;
 
     size_t       GetSize  () const;
-    const uint8_t *ToArray();
+    const uint8_t *ToArray() const;
     uint8_t      At       (size_t index) const;
     void         Clear    ();
 
-    virtual ~AxiDmaBuffer();
+    virtual ~AxiDmaBuffer() = default;
 private:
-    std::vector<uint8_t> _data;
+    std::vector<uint8_t> m_data;
 };
 
 

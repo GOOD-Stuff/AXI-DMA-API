@@ -13,6 +13,7 @@
 #include <thread>
 #include <unistd.h>
 #include <mutex>
+#include <memory>
 #include "AxiDmaBuffer.h"
 #include "AxiDmaDescriptors.h"
 
@@ -23,30 +24,40 @@
 class AxiDMA {
 public:
     enum error_codes {
-        DMA_OK = 0,              // no error
-        ERR_DMA_OPEN_FD,         // can't open /dev/mem
-        ERR_DMA_BAD_CHAIN,       // wrong AXI DMA descriptors chain
-        ERR_DMA_DEV_MAP,         // can't mmap to /dev/mem
-        ERR_DMA_UNINIT,          // can't initialize descriptors
-        ERR_DMA_BAD_DELAY,       // set wrong delay (to mm2s/s2mm control register)
-        ERR_DMA_BAD_THRESHOLD,   // set wrong threshold (to control register)
-        ERR_DMA_HALT_WORK,       // AXI DMA in halt state
-        ERR_DMA_ALR_WORK,        // AXI DMA already work
-        ERR_DMA_RESET_RX,        // can't reset Rx channel
-        ERR_DMA_RESET_TX,        // can't reset Tx channel
-        ERR_DMA_TX_IRQ,          // get error Tx interrupt
-        ERR_DMA_RX_IRQ,          // get error Rx interrupt
-        ERR_DMA_TX_TIMEOUT,         // timeout (when transfer data)
-        ERR_DMA_RX_TIMEOUT,         // timeout (when transfer data)
-        ERR_DMA_BAD_ALLOC,       // can't allocate memory
+        DMA_OK = 0,              // 00 - no error
+        ERR_DMA_OPEN_FD,         // 01 - can't open /dev/mem
+        ERR_DMA_BAD_CHAIN,       // 02 - wrong AXI DMA descriptors chain
+        ERR_DMA_DEV_MAP,         // 03 - can't mmap to /dev/mem
+        ERR_DMA_UNINIT,          // 04 - can't initialize descriptors
+        ERR_DMA_BAD_DELAY,       // 05 - set wrong delay (to mm2s/s2mm control register)
+        ERR_DMA_BAD_THRESHOLD,   // 06 - set wrong threshold (to control register)
+        ERR_DMA_HALT_WORK,       // 07 - AXI DMA in halt state
+        ERR_DMA_ALR_WORK,        // 08 - AXI DMA already work
+        ERR_DMA_RESET_RX,        // 09 - can't reset Rx channel
+        ERR_DMA_RESET_TX,        // 10 - can't reset Tx channel
+        ERR_DMA_TX_IRQ,          // 11 - get error Tx interrupt
+        ERR_DMA_RX_IRQ,          // 12 - get error Rx interrupt
+        ERR_DMA_TX_TIMEOUT,      // 13 - timeout (when transfer data)
+        ERR_DMA_RX_TIMEOUT,      // 14 - timeout (when transfer data)
+        ERR_DMA_BAD_ALLOC,       // 15 - can't allocate memory
+        ERR_DMA_TX_IDLEOUT,      // 16 - timeout by waiting IDLE state
+        ERR_DMA_RX_IDLEOUT,      // 17 - timeout by waiting IDLE state
+        ERR_DMA_IS_SG,           // 18 - trying to using Direct Mode's methods in SG mode
+        ERR_DMA_IS_DIRECT,       // 19 - trying to using SG methods in Direct Mode
     };
 
-    explicit AxiDMA();
-    explicit AxiDMA(uint32_t dma_base_addr);
+    enum directions_t {
+        FROM_MEM_TO_DEV = 0, // TX
+        FROM_DEV_TO_MEM  // RX
+    };
 
+    AxiDMA();
+    explicit AxiDMA(uint32_t dma_base_addr);
+    /************* SG part *****************/
     int Send  (const AxiDmaBuffer *buff);
     int Recv  (AxiDmaBuffer *buff, size_t size);
     int Transf(const AxiDmaBuffer *tx, AxiDmaBuffer *rx, size_t rx_len);
+    int Transf(const void* tx, size_t tx_len, void* rx, size_t rx_len);
 
     int Send_repeat(const AxiDmaBuffer *buff);
 
@@ -56,10 +67,23 @@ public:
     void ManualResetChannel   (bool way);
     void *ManualAllocMemory   (size_t buffer_size, uint32_t buffer_base_address);
 
-    uint32_t GetControl (bool way);
-    uint32_t GetStatus  (bool way);
-    uint32_t GetCurrDesc(bool way);
-    uint32_t GetTailDesc(bool way);
+    bool IsSg();
+    /******************************************/
+
+    /************** Direct mode ***************/
+    int DirectSend(const AxiDmaBuffer *buff);
+    int DirectSend(const void *buff, size_t buff_size);
+    int DirectRecv(AxiDmaBuffer *buff, size_t size);
+    int DirectRecv(void *buff, size_t buff_size);
+    int DirectManualRecv(uint32_t dst_addr, size_t size);
+    /******************************************/
+
+    /************** Debug funcs ***************/
+    uint32_t GetControl (directions_t way) const;
+    uint32_t GetStatus  (directions_t way) const;
+    uint32_t GetCurrDesc(directions_t way) const;
+    uint32_t GetTailDesc(directions_t way) const;
+    /******************************************/
 
     virtual ~AxiDMA();
 private:
@@ -73,24 +97,35 @@ private:
         uint32_t mm2s_curdesc_msb;	// 0x0C
         uint32_t mm2s_taildesc;		// 0x10
         uint32_t mm2s_taildesc_msb;	// 0x14
-        uint32_t reserved_1;		// 0x18 - in sg not using
-        uint32_t reserved_2;		// 0x1C - in sg not using
-        uint32_t reserved_3; 		// 0x20 - in sg not using
-        uint32_t reserved_4;		// 0x24 - in sg not using
-        uint32_t reserved_5; 		// 0x28 - in sg not using
-        uint32_t sg_ctl;			// 0x2C
+        uint32_t mm2s_src_addr;		// 0x18 - in sg not using, only for dm
+        uint32_t mm2s_src_addr_msb; // 0x1C - in sg not using, only for dm
+        uint32_t reserved_0; 		// 0x20 - not using
+        uint32_t reserved_1;		// 0x24 - not using
+        uint32_t mm2s_length; 		// 0x28 - in sg not using, only for dm
+        uint32_t sg_ctl;			// 0x2C - only in multichannel mode
         uint32_t s2mm_dmacr;		// 0x30
         uint32_t s2mm_dmasr;		// 0x34
         uint32_t s2mm_curdesc;		// 0x38
         uint32_t s2mm_curdesc_msb;	// 0x3C
         uint32_t s2mm_taildesc;		// 0x40
         uint32_t s2mm_taildesc_msb;	// 0x44
+        uint32_t s2mm_dst_addr;    	// 0x48 - in sg not using, only for dm
+        uint32_t s2mm_dst_addr_msb; // 0x4C - in sg not using, only for dm
+        uint32_t reserved_2;        // 0x50
+        uint32_t reserved_3;        // 0x54
+        uint32_t s2mm_length;       // 0x58 - in sg not using, only for dm
     } dma_device_t;
 
     static constexpr uint32_t AXIDMA_BASEADDR       = 0x80400000;
     static constexpr size_t   DESCRIPTORS_BUFF_SIZE = 3145728;
     static constexpr int      RESET_TIMEOUT         = 300000;
     static constexpr uint32_t UNKNOWN_SIZE          = 0xFFFF;
+
+    // XXX: need to rewrite
+    static constexpr uint32_t RX_BASEADDR	 = 0x01000000;
+    static constexpr uint32_t RX_BUFFER_BASE = 0x02000000;
+    static constexpr uint32_t TX_BASEADDR	 = 0x03000000;
+    static constexpr uint32_t TX_BUFFER_BASE = 0x04000000;
 
     /************************* MASK ****************************/
     // Control
@@ -124,15 +159,17 @@ private:
     static constexpr uint32_t DMASR_DELAY_MASK		= 0xFF000000;
     /**************************************************************/
     uint32_t _base_addr { AXIDMA_BASEADDR };
-    std::mutex mute; // for thread safe (?)
+    std::mutex tx_mute; // for thread safe (?)
+    std::mutex rx_mute;
     /**
      * Software part of AXI DMA
      * Uninitialized dma means no connection between software and hardware parts
      */
-    int              fd   { 0 };
-    int 		     isRx { 0 }; // Is exist RX channel
-    int 		     isTx { 0 }; // Is exist TX channel
-    dma_device_t     *dma_hw;    // Pointer to hardware AXI DMA
+    int              fd      { 0 };
+    int 		     isRx    { 0 };     // Is exist RX channel
+    int 		     isTx    { 0 };     // Is exist TX channel
+    bool             isSg    { false }; // Is Scatter/Gather mode
+    dma_device_t     *dma_hw { nullptr };        // Pointer to hardware AXI DMA
 
     int  run();
     int  initialization();
@@ -146,10 +183,10 @@ private:
     bool isRxReset();
 
     /***** Reading registers of AXI DMA *****/
-    uint32_t getTxControl();
-    uint32_t getTxStatus();
-    uint32_t getRxStatus();
-    uint32_t getRxControl();
+    uint32_t getTxControl() const;
+    uint32_t getTxStatus() const;
+    uint32_t getRxStatus() const;
+    uint32_t getRxControl() const;
 
     /***** Writing registers of AXI DMA *****/
     void setTxControl (uint32_t control_reg);
@@ -161,6 +198,13 @@ private:
     void setRxStatus  (uint32_t status_reg);
     void setRxCurDesc (uint32_t curr_desc);
     void setRxTailDesc(uint32_t tail_desc);
+
+    void setSourceAddress     (uint32_t src_addr);
+    void setDestinationAddress(uint32_t dst_addr);
+    void setTxLength          (uint32_t length);
+    void setRxLength          (uint32_t length);
+    uint32_t getTxLength      ();
+    uint32_t getRxLength      ();
 
     void startTx();
     void startRx();
@@ -195,13 +239,21 @@ private:
     int  waitTxComplete();
     int  waitRxComplete();
 
+    int  waitTxDirectComplete();
+    int  waitRxDirectComplete();
+
     /****** Check existence of Tx/Rx channels *******/
-    static bool hasTx(dma_device_t *dma_hw) {
+    static bool hasTx(dma_device_t *dma_hw) { // check MM2S channel
         return dma_hw->mm2s_dmacr != 0;
     }
 
-    static bool hasRx(dma_device_t *dma_hw) {
+    static bool hasRx(dma_device_t *dma_hw) { // check S2MM channel
         return dma_hw->s2mm_dmacr != 0;
+    }
+
+    static bool hasSg(dma_device_t *dma_hw) { // check Scatter/Gather mode
+        return (dma_hw->s2mm_dmasr & DMASR_ISSG_MASK)
+            || (dma_hw->mm2s_dmasr & DMASR_ISSG_MASK);
     }
 };
 

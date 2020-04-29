@@ -5,13 +5,26 @@
 #include "AxiDmaBuffer.h"
 
 
-AxiDmaBuffer::AxiDmaBuffer() noexcept {
-    _data.clear();
+AxiDmaBuffer::AxiDmaBuffer(const std::vector<uint8_t>& data) noexcept {
+    m_data = data;
 }
 
 
-AxiDmaBuffer::~AxiDmaBuffer() {
-    _data.clear();
+AxiDmaBuffer::AxiDmaBuffer(const uint8_t* data, size_t len) {
+    if (data == nullptr || len == 0)
+        throw std::runtime_error("<E> Input data is empty");
+    m_data.reserve(len);
+    std::copy(data, data + len, std::back_inserter(m_data));
+}
+
+
+void AxiDmaBuffer::Append(const std::vector<uint8_t>& vec) {
+    std::copy(vec.begin(), vec.end(), std::back_inserter(m_data));
+}
+
+
+void AxiDmaBuffer::Append(std::vector<uint8_t>&& vec) {
+    m_data.insert(m_data.end(), make_move_iterator(vec.begin()), make_move_iterator(vec.end()));
 }
 
 
@@ -22,7 +35,7 @@ AxiDmaBuffer::~AxiDmaBuffer() {
  * @return none
  */
 void AxiDmaBuffer::PushBack(uint8_t value) {
-    _data.push_back(value);
+    m_data.emplace_back(value);
 }
 
 
@@ -32,10 +45,13 @@ void AxiDmaBuffer::PushBack(uint8_t value) {
  *
  * @return val - last element of AxiDmaBuffer container
  */
-uint8_t AxiDmaBuffer::PopBack() {
-    auto it = _data.rbegin();
+uint8_t AxiDmaBuffer::PopBack() noexcept {
+    if (m_data.size() == 0)
+        return 0;
+
+    auto it = m_data.rbegin();
     uint8_t val = *it;
-    _data.erase(_data.end()-1);
+    m_data.erase(m_data.end()-1);
 
     return val;
 }
@@ -51,7 +67,7 @@ uint8_t AxiDmaBuffer::PopBack() {
 void AxiDmaBuffer::CopyFrom(uint8_t *src, size_t len) {
     if (src == nullptr) throw std::runtime_error("src is nullptr");
     if (len == 0)       throw std::runtime_error("len is 0");
-    std::copy(src, src + len, std::back_inserter(_data));
+    std::copy(src, src + len, std::back_inserter(m_data));
 }
 
 
@@ -64,7 +80,7 @@ void AxiDmaBuffer::CopyFrom(uint8_t *src, size_t len) {
  */
 void AxiDmaBuffer::CopyInto(uint8_t *dst) const {
     if (dst == nullptr) throw std::runtime_error("dst is nullptr");
-    std::copy(_data.begin(), _data.end(), dst);
+    std::copy(m_data.begin(), m_data.end(), dst);
 }
 
 
@@ -75,7 +91,7 @@ void AxiDmaBuffer::CopyInto(uint8_t *dst) const {
  * @return size of container
  */
 size_t AxiDmaBuffer::GetSize() const {
-    return _data.size();
+    return m_data.size();
 }
 
 
@@ -85,8 +101,8 @@ size_t AxiDmaBuffer::GetSize() const {
  *
  * @return pointer to data
  */
-const uint8_t *AxiDmaBuffer::ToArray() {
-    return _data.data();
+const uint8_t *AxiDmaBuffer::ToArray() const {
+    return m_data.data();
 }
 
 
@@ -96,8 +112,8 @@ const uint8_t *AxiDmaBuffer::ToArray() {
  *
  * @return element from AxiDmaBuffer container
  */
-inline uint8_t AxiDmaBuffer::At(size_t index) const {
-    return _data.at(index);
+uint8_t AxiDmaBuffer::At(size_t index) const {
+    return m_data.at(index);
 }
 
 
@@ -108,5 +124,5 @@ inline uint8_t AxiDmaBuffer::At(size_t index) const {
  * @return none
  */
 void AxiDmaBuffer::Clear() {
-    _data.clear();
+    m_data.clear();
 }
